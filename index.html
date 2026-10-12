@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>案摘複製</title>
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;
+      background:#f5f6f8;
+      color:#111827;
+    }
+    .wrap{
+      max-width:720px;
+      margin:0 auto;
+      padding:24px 16px 40px;
+    }
+    .card{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:18px;
+      padding:20px;
+      box-shadow:0 8px 24px rgba(0,0,0,.06);
+    }
+    h1{
+      margin:0 0 8px;
+      font-size:28px;
+    }
+    .hint{
+      margin:0 0 18px;
+      color:#6b7280;
+      line-height:1.6;
+    }
+    #copyBtn{
+      width:100%;
+      border:0;
+      border-radius:16px;
+      padding:18px 20px;
+      font-size:22px;
+      font-weight:800;
+      background:#2563eb;
+      color:#fff;
+      cursor:pointer;
+    }
+    #copyBtn:active{transform:scale(.99)}
+    #copyBtn:disabled{
+      background:#9ca3af;
+      cursor:not-allowed;
+    }
+    #status{
+      text-align:center;
+      min-height:28px;
+      padding-top:12px;
+      font-weight:700;
+      color:#166534;
+    }
+    textarea{
+      width:100%;
+      min-height:280px;
+      margin-top:12px;
+      resize:vertical;
+      border:1px solid #d1d5db;
+      border-radius:12px;
+      padding:14px;
+      font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;
+      color:#111827;
+      background:#fafafa;
+    }
+    .empty{
+      margin-top:14px;
+      padding:14px;
+      border-radius:12px;
+      background:#fff7ed;
+      color:#9a3412;
+      line-height:1.6;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>案摘複製</h1>
+      <p class="hint">掃描 QR 後，按一下即可把案摘複製到剪貼簿。</p>
+
+      <button id="copyBtn" type="button">📋 複製案摘</button>
+      <div id="status"></div>
+
+      <textarea id="preview" readonly placeholder="尚未收到案摘內容"></textarea>
+      <div id="emptyMsg" class="empty" hidden>
+        沒有收到案摘內容。這個頁面本身不儲存案件資料，請由案摘工具產生 QR 後再掃描進入。
+      </div>
+    </section>
+  </main>
+
+<script>
+(function(){
+  const preview = document.getElementById('preview');
+  const copyBtn = document.getElementById('copyBtn');
+  const status = document.getElementById('status');
+  const emptyMsg = document.getElementById('emptyMsg');
+
+  function base64UrlDecode(input){
+    let s = input.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    const binary = atob(s);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  function readPayload(){
+    const hash = location.hash.slice(1);
+    if (!hash) return '';
+
+    try{
+      if (hash.startsWith('b64=')){
+        return base64UrlDecode(hash.slice(4));
+      }
+      if (hash.startsWith('t=')){
+        return decodeURIComponent(hash.slice(2));
+      }
+      return decodeURIComponent(hash);
+    }catch(e){
+      return '';
+    }
+  }
+
+  const text = readPayload();
+  preview.value = text;
+
+  if (!text){
+    copyBtn.disabled = true;
+    emptyMsg.hidden = false;
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    if (!preview.value) return;
+
+    try{
+      await navigator.clipboard.writeText(preview.value);
+      status.textContent = '已複製 ✓';
+    }catch(e){
+      preview.focus();
+      preview.select();
+      const ok = document.execCommand('copy');
+      status.textContent = ok ? '已複製 ✓' : '請長按下方文字後複製';
+    }
+
+    setTimeout(() => status.textContent = '', 1800);
+  });
+})();
+</script>
+</body>
+</html>
